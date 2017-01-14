@@ -15,7 +15,7 @@ After that you can get all information about one file in archive:
 ```php
 var_dump($cab->getFileData('README.md'));
 ```
-# CabArchive
+## CabArchive API
 All list of properties and methods of `CabArchive` is listed below.
 
 - **$filesCount** - number of files in Cab-archive
@@ -30,6 +30,7 @@ All list of properties and methods of `CabArchive` is listed below.
 - **getFileNames()** - retrives list of files from archive
 - **getFileData($filename)** - returns additional info of file.
 - **getFileContent($filename)** - _in development now_
+- **extract($output, array $nodes = [])** - _in development now_
 
 ### getFileData($filename)
 This method returns a object with following fields:
@@ -37,3 +38,12 @@ This method returns a object with following fields:
 - **size** - uncompressed size in bytes
 - **unixtime** - date&time of modification in unixtime format
 - **is_compressed** - is file compressed as _boolean_
+
+### getFileContent($filename)
+This method returns raw file content of `$filename`.
+
+_This method is in development now. For some reasons cab files has different format that described on Microsoft site_
+
+## CAB Format
+- .CAB-files format is described at https://msdn.microsoft.com/en-us/library/bb417343.aspx
+- MSZIP compression (based on Deflate) is described at http://interoperability.blob.core.windows.net/files/MS-MCI/[MS-MCI].pdf
