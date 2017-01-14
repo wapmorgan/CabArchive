@@ -1,0 +1,8 @@
+{
+    "autoload": {
+        "classmap": ["src/CabArchive.php"]
+    },
+    "require": {
+        "wapmorgan/binary-stream": "dev-master"
+    }
+}
