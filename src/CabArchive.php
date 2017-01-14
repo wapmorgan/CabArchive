@@ -11,10 +11,12 @@ class CabArchive {
     protected $folders = array();
     protected $files = array();
     protected $blocks = array();
-    protected $blocksRaw = array();
+    public $blocksRaw = array();
     protected $foldersRaw = array();
 
     public $filesCount = -1;
+    public $foldersCount = -1;
+    public $blocksCount = -1;
 
     public function __construct($filename) {
         $this->filename = $filename;
@@ -58,10 +60,11 @@ class CabArchive {
                 $this->header['cab_next'] = $this->readNullTerminatedString();
                 $this->header['cab_next_disk'] = $this->readNullTerminatedString();
             }
-            var_dump($header_reserve);
+            // var_dump($header_reserve);
         }
-        var_dump($this->header);
+        // var_dump($this->header);
         $this->filesCount = $this->header['filesCount'];
+        $this->foldersCount = $this->header['foldersCount'];
         // read folders
         for ($i = 0; $i < $this->header['foldersCount']; $i++) {
             $folder = $this->stream->readGroup(array(
@@ -74,7 +77,7 @@ class CabArchive {
             }
             $this->folders[] = $folder;
         }
-        var_dump($this->folders);
+        // var_dump($this->folders);
         // read files
         for ($i = 0; $i < $this->header['filesCount']; $i++) {
             $file = $this->stream->readGroup(array(
@@ -97,9 +100,8 @@ class CabArchive {
             $file['name'] = $this->readNullTerminatedString();
             $this->files[] = $file;
         }
-        var_dump($this->files);
+        // var_dump($this->files);
         // read data
-
         foreach ($this->folders as $folder_id => $folder) {
             $last_uncomp_offset = 0;
             $this->stream->go($folder['dataOffset']);
@@ -118,7 +120,7 @@ class CabArchive {
                 $this->blocks[$folder_id][] = $block;
             }
         }
-        var_dump($this->blocks);
+        // var_dump($this->blocks);
     }
 
     public function getCabHeader() {
@@ -179,10 +181,10 @@ class CabArchive {
         if (!isset($folder_id))
             return false;
         $file_end = $file_offset + $file_size;
-        var_dump('Folder: '.$folder_id);
-        var_dump('File offset: '.$file_offset);
-        var_dump('File size: +'.$file_size);
-        var_dump('File end: '.$file_end);
+        // var_dump('Folder: '.$folder_id);
+        // var_dump('File offset: '.$file_offset);
+        // var_dump('File size: +'.$file_size);
+        // var_dump('File end: '.$file_end);
 
         // $blocks_of_file = $this->detectBlocksOfFile($folder_id, $file_offset, $file_size);
 
@@ -238,12 +240,21 @@ class CabArchive {
     public function decompressFolder($folderId) {
         if (isset($this->foldersRaw[$folderId]))
             return true;
+        $context = inflate_init(ZLIB_ENCODING_RAW, array('level' => 9, 'strategy' => ZLIB_FIXED));
         $folder_raw = null;
         foreach ($this->blocks[$folderId] as $block_id => $block) {
             $this->stream->go('block_'.$folderId.'_'.$block_id);
-            $this->stream->readString(2);
+            if ($this->stream->readString(2) != 'CK')
+                throw new Exception('Can\'t read block '.$folderId.':'.$block_id.', wrong MSZIP signature');
             $folder_raw = $this->stream->readString($block['compSize'] - 2);
-            var_dump(gzinflate($folder_raw));
+            echo 'Try to decode '.$folderId.':'.$block_id.' block : ';
+            $decoded = @inflate_add($context, $folder_raw, ZLIB_FULL_FLUSH);
+            // $decoded = @zlib_decode($folder_raw);
+            if ($decoded === false) echo 'failed'.PHP_EOL;
+            else {
+                echo strlen($decoded).' bytes'.PHP_EOL;
+                $this->blocksRaw[$folderId][$block_id] = $decoded;
+            }
         }
         // $this->foldersRaw[$folderId] = gzinflate($folder_raw, 0xfffffffffffffff);
         // var_dump($this->foldersRaw[$folderId]);
