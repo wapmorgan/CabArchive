@@ -240,7 +240,6 @@ class CabArchive {
     public function decompressFolder($folderId) {
         if (isset($this->foldersRaw[$folderId]))
             return true;
-        $context = inflate_init(ZLIB_ENCODING_RAW, array('level' => 9, 'strategy' => ZLIB_FIXED));
         $folder_raw = null;
         foreach ($this->blocks[$folderId] as $block_id => $block) {
             $this->stream->go('block_'.$folderId.'_'.$block_id);
@@ -248,15 +247,19 @@ class CabArchive {
                 throw new Exception('Can\'t read block '.$folderId.':'.$block_id.', wrong MSZIP signature');
             $folder_raw = $this->stream->readString($block['compSize'] - 2);
             echo 'Try to decode '.$folderId.':'.$block_id.' block : ';
-            $decoded = @inflate_add($context, $folder_raw, ZLIB_FULL_FLUSH);
-            // $decoded = @zlib_decode($folder_raw);
+            $context = inflate_init(ZLIB_ENCODING_RAW, ($block_id > 0) ? array('dictionary' => str_word_count($this->blocksRaw[$folderId][$block_id - 1], 1)) : array());
+            $decoded = inflate_add($context, $folder_raw);
+            // $decoded = @gzinflate($folder_raw);
             if ($decoded === false) echo 'failed'.PHP_EOL;
             else {
                 echo strlen($decoded).' bytes'.PHP_EOL;
                 $this->blocksRaw[$folderId][$block_id] = $decoded;
             }
+
         }
-        // $this->foldersRaw[$folderId] = gzinflate($folder_raw, 0xfffffffffffffff);
+        // echo 'folder raw: '.strlen($folder_raw).', ';
+        // $this->foldersRaw[$folderId] = gzinflate($folder_raw);
+        // echo 'Folder '.strlen($this->foldersRaw[$folderId]).PHP_EOL;
         // var_dump($this->foldersRaw[$folderId]);
     }
 
