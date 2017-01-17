@@ -167,7 +167,17 @@ class CabArchive {
     public function getFileData($filename) {
         foreach ($this->files as $file) {
             if ($file['name'] == $filename) {
-                return (object)array('unixtime' => $file['unixtime'], 'size' => $file['size'], 'is_compressed' => $this->folders[$file['folder']]['compression'] != self::COMPRESSION_NONE);
+                if ($this->folders[$file['folder']]['compression'] == self::COMPRESSION_NONE)
+                    $packedSize = $file['size'];
+                else {
+                    $packedSize = 0;
+                    foreach ($this->detectBlocksOfFile($file['folder'], $file['offsetInFolder'], $file['size']) as $block_id) {
+                        $block = $this->blocks[$file['folder']][$block_id];
+                        // if ($block['uncompOffset'] <= $file['offsetInFolder'] && $block['uncompSize'] >= $file['size'])
+                        $packedSize += $block['compSize'];
+                    }
+                }
+                return (object)array('unixtime' => $file['unixtime'], 'size' => $file['size'], 'packedSize' => $packedSize, 'is_compressed' => $this->folders[$file['folder']]['compression'] != self::COMPRESSION_NONE);
             }
         }
         return false;
@@ -246,7 +256,7 @@ class CabArchive {
         // traverse all blocks to determine list to uncompress
         $blocks = array();
         foreach ($this->blocks[$folderId] as $block_id => $block) {
-            echo 'Block #'.$block_id.': '.$block['uncompOffset'].'...'.($block['uncompOffset'] + $block['uncompSize']).PHP_EOL;
+            // echo 'Block #'.$block_id.': '.$block['uncompOffset'].'...'.($block['uncompOffset'] + $block['uncompSize']).PHP_EOL;
             if ($fileOffset > ($block['uncompOffset'] + $block['uncompSize']) || $fileEnd < $block['uncompOffset'])
                 continue;
             $blocks[] = $block_id;
