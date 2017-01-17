@@ -28,7 +28,12 @@ All list of properties and methods of `CabArchive` is listed below.
 - **getSetId()** - returns set id (identical for all cab-archives from one set)
 - **getInSetNumber()** - returns number of cab in set
 - **getFileNames()** - retrives list of files from archive
-- **getFileData($filename)** - returns additional info of file.
+- **getFileData($filename)** - returns additional info of file as object.
+- **getFileAttributes($filename)** - returns list of file attributes. All available attributes:
+    - **CabArchive::ATTRIB_READONLY**
+    - **CabArchive::ATTRIB_HIDDEN**
+    - **CabArchive::ATTRIB_SYSTEM**
+    - **CabArchive::ATTRIB_EXEC**
 - **getFileContent($filename)** - _in development now_
 - **extract($output, array $nodes = [])** - _in development now_
 

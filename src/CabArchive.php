@@ -5,6 +5,11 @@ class CabArchive {
     const COMPRESSION_NONE = 0x0;
     const COMPRESSION_MSZIP = 0x1;
 
+    const ATTRIB_READONLY = 0x1;
+    const ATTRIB_HIDDEN = 0x2;
+    const ATTRIB_SYSTEM = 0x4;
+    const ATTRIB_EXEC = 0x40;
+
     protected $filename;
     protected $stream;
     protected $header;
@@ -162,8 +167,20 @@ class CabArchive {
     public function getFileData($filename) {
         foreach ($this->files as $file) {
             if ($file['name'] == $filename) {
-                $file['is_compressed'] = $this->folders[$file['folder']]['compression'] != self::COMPRESSION_NONE;
-                return (object)$file;
+                return (object)array('unixtime' => $file['unixtime'], 'size' => $file['size'], 'is_compressed' => $this->folders[$file['folder']]['compression'] != self::COMPRESSION_NONE);
+            }
+        }
+        return false;
+    }
+
+    public function getFileAttributes($filename) {
+        foreach ($this->files as $file) {
+            if ($file['name'] == $filename) {
+                $attribs = array();
+                foreach (array(self::ATTRIB_READONLY, self::ATTRIB_HIDDEN, self::ATTRIB_SYSTEM, self::ATTRIB_EXEC) as $attrib)
+                    if ($file['attributes'] & $attrib)
+                        $attribs[] = $attrib;
+                return $attribs;
             }
         }
         return false;
@@ -247,14 +264,16 @@ class CabArchive {
                 throw new Exception('Can\'t read block '.$folderId.':'.$block_id.', wrong MSZIP signature');
             $folder_raw = $this->stream->readString($block['compSize'] - 2);
             echo 'Try to decode '.$folderId.':'.$block_id.' block : ';
-            $context = inflate_init(ZLIB_ENCODING_RAW, ($block_id > 0) ? array('dictionary' => str_word_count($this->blocksRaw[$folderId][$block_id - 1], 1)) : array());
+            $context = inflate_init(ZLIB_ENCODING_RAW, ($block_id > 0) ? array('dictionary' => str_replace("\00", ' ', $this->blocksRaw[$folderId][$block_id - 1])) : array());
             $decoded = inflate_add($context, $folder_raw);
             // $decoded = @gzinflate($folder_raw);
             if ($decoded === false) echo 'failed'.PHP_EOL;
             else {
                 echo strlen($decoded).' bytes'.PHP_EOL;
                 $this->blocksRaw[$folderId][$block_id] = $decoded;
+                // var_dump($this->blocksRaw[$folderId][$block_id]);
             }
+            if ($block_id == 1) break;
 
         }
         // echo 'folder raw: '.strlen($folder_raw).', ';
