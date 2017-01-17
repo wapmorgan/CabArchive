@@ -1,7 +1,8 @@
 {
     "name": "wapmorgan/cab-archive",
-    "description": "Reading and extraction .cab-files",
+    "description": "Reading and extraction of .cab-files",
     "license": "MIT",
+    "keywords": ["cab", "cabinet", "archive"],
     "autoload": {
         "classmap": ["src/CabArchive.php"]
     },
