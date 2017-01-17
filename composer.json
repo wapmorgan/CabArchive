@@ -4,9 +4,9 @@
     "license": "MIT",
     "keywords": ["cab", "cabinet", "archive"],
     "autoload": {
-        "classmap": ["src/CabArchive.php"]
+        "psr-0": {"CabArchive": "src/"}
     },
     "require": {
-        "wapmorgan/binary-stream": "dev-master"
+        "wapmorgan/binary-stream": "~0.0"
     }
 }
