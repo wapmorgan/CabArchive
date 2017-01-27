@@ -46,14 +46,20 @@ All list of properties and methods of `CabArchive` is listed below.
 - **extract($output, array $nodes = [])** - _in development now_
 
 ### getFileData($filename)
+```php
+object getFileData($filename))
+```
 This method returns a object with following fields:
 
 - **size** - uncompressed size in bytes
-- **packed_size** - compressed size in bytes
+- **packedSize** - compressed size in bytes
 - **unixtime** - date&time of modification in unixtime format
-- **is_compressed** - is file compressed as _boolean_
+- **isCompressed** - is file compressed as _boolean_
 
 ### getFileContent($filename)
+```php
+string getFileContent($filename)
+```
 This method returns raw file content of `$filename`.
 
 _This method is in development now. For some reasons cab files has different format that described on Microsoft site_
