@@ -273,6 +273,7 @@ class CabArchive {
         if (isset($this->foldersRaw[$folderId]))
             return true;
         $folder_raw = null;
+        $context = inflate_init(ZLIB_ENCODING_RAW);
         foreach ($this->blocks[$folderId] as $block_id => $block) {
             $this->stream->go('block_'.$folderId.'_'.$block_id);
             if ($this->stream->readString(2) != 'CK')
@@ -280,18 +281,17 @@ class CabArchive {
             $folder_raw = $this->stream->readString($block['compSize'] - 2);
             // file_put_contents('comp_'.$folderId.'-'.$block_id, $folder_raw);
             echo 'Try to decode '.$folderId.':'.$block_id.' block : ';
-            if ($block_id == 0) {
-                $context = inflate_init(ZLIB_ENCODING_RAW);
-            } else {
-                $context = inflate_init(ZLIB_ENCODING_RAW, array('dictionary' => str_replace("\00", ' ', $this->blocksRaw[$folderId][$block_id - 1])."\00"));
-            }
+            // if ($block_id == 0) {
+            // } else {
+            //     $context = inflate_init(ZLIB_ENCODING_RAW, array('dictionary' => str_replace("\00", ' ', $this->blocksRaw[$folderId][$block_id - 1])."\00"));
+            // }
             $decoded = inflate_add($context, $folder_raw);
             // $decoded = @gzinflate($folder_raw);
             if ($decoded === false) echo 'failed'.PHP_EOL;
             else {
                 echo strlen($decoded).' bytes'.PHP_EOL;
                 $this->blocksRaw[$folderId][$block_id] = $decoded;
-                file_put_contents($folderId.'-'.$block_id, $decoded);
+                // file_put_contents($folderId.'-'.$block_id, $decoded);
             }
             if ($block_id == 1) break;
 
