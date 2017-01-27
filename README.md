@@ -49,6 +49,7 @@ All list of properties and methods of `CabArchive` is listed below.
 This method returns a object with following fields:
 
 - **size** - uncompressed size in bytes
+- **packed_size** - compressed size in bytes
 - **unixtime** - date&time of modification in unixtime format
 - **is_compressed** - is file compressed as _boolean_
 

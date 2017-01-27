@@ -182,7 +182,7 @@ class CabArchive {
                         $packedSize += ceil($block_intersection / 100 * $block['compSize']);
                     }
                 }
-                return (object)array('unixtime' => $file['unixtime'], 'size' => $file['size'], 'packedSize' => $packedSize, 'is_compressed' => $this->folders[$file['folder']]['compression'] != self::COMPRESSION_NONE);
+                return (object)array('unixtime' => $file['unixtime'], 'size' => $file['size'], 'packed_size' => $packedSize, 'is_compressed' => $this->folders[$file['folder']]['compression'] != self::COMPRESSION_NONE);
             }
         }
         return false;
