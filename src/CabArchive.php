@@ -156,6 +156,10 @@ class CabArchive {
         return $this->header['inSetNumber'];
     }
 
+    public function getBlocks() {
+        return $this->blocks;
+    }
+
     public function getFileNames() {
         $files = array();
         foreach ($this->files as $file) {
@@ -173,8 +177,9 @@ class CabArchive {
                     $packedSize = 0;
                     foreach ($this->detectBlocksOfFile($file['folder'], $file['offsetInFolder'], $file['size']) as $block_id) {
                         $block = $this->blocks[$file['folder']][$block_id];
-                        // if ($block['uncompOffset'] <= $file['offsetInFolder'] && $block['uncompSize'] >= $file['size'])
-                        $packedSize += $block['compSize'];
+                        // block intersection
+                        $block_intersection = $this->calculateRangesIntersection(array($file['offsetInFolder'], $file['offsetInFolder'] + $file['size']), array($block['uncompOffset'], $block['uncompOffset'] + $block['uncompSize']));
+                        $packedSize += ceil($block_intersection / 100 * $block['compSize']);
                     }
                 }
                 return (object)array('unixtime' => $file['unixtime'], 'size' => $file['size'], 'packedSize' => $packedSize, 'is_compressed' => $this->folders[$file['folder']]['compression'] != self::COMPRESSION_NONE);
@@ -273,15 +278,20 @@ class CabArchive {
             if ($this->stream->readString(2) != 'CK')
                 throw new Exception('Can\'t read block '.$folderId.':'.$block_id.', wrong MSZIP signature');
             $folder_raw = $this->stream->readString($block['compSize'] - 2);
+            // file_put_contents('comp_'.$folderId.'-'.$block_id, $folder_raw);
             echo 'Try to decode '.$folderId.':'.$block_id.' block : ';
-            $context = inflate_init(ZLIB_ENCODING_RAW, ($block_id > 0) ? array('dictionary' => str_replace("\00", ' ', $this->blocksRaw[$folderId][$block_id - 1])) : array());
+            if ($block_id == 0) {
+                $context = inflate_init(ZLIB_ENCODING_RAW);
+            } else {
+                $context = inflate_init(ZLIB_ENCODING_RAW, array('dictionary' => str_replace("\00", ' ', $this->blocksRaw[$folderId][$block_id - 1])."\00"));
+            }
             $decoded = inflate_add($context, $folder_raw);
             // $decoded = @gzinflate($folder_raw);
             if ($decoded === false) echo 'failed'.PHP_EOL;
             else {
                 echo strlen($decoded).' bytes'.PHP_EOL;
                 $this->blocksRaw[$folderId][$block_id] = $decoded;
-                // var_dump($this->blocksRaw[$folderId][$block_id]);
+                file_put_contents($folderId.'-'.$block_id, $decoded);
             }
             if ($block_id == 1) break;
 
@@ -337,5 +347,31 @@ class CabArchive {
             if ($c != "\00") $string .= $c;
         } while ($c != "\00");
         return $string;
+    }
+
+    /**
+     * Calculates how B intersect with A
+     */
+    protected function calculateRangesIntersection(array $rangeA, array $rangeB) {
+        $intersection = 100;
+        // shift to zero-based calculations
+        $offset = min($rangeA[0], $rangeB[0]);
+        if ($offset > 0) {
+            $rangeA = array($rangeA[0] - $offset, $rangeA[1] - $offset);
+            $rangeB = array($rangeB[0] - $offset, $rangeB[1] - $offset);
+        }
+
+        $percent = ($rangeB[1] - $rangeB[0]) / 100;
+
+        // if A start offset larger than B start offset
+        if ($rangeA[0] > $rangeB[0]) {
+            $intersection -= ($rangeA[0] - $rangeB[0]) / $percent;
+        }
+
+        if ($rangeA[1] < $rangeB[1]) {
+            $intersection -= ($rangeB[1] - $rangeA[1]) / $percent;
+        }
+
+        return $intersection;
     }
 }
