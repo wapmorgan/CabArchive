@@ -1,0 +1,32 @@
+#!/usr/bin/php
+<?php
+require __DIR__.'/../vendor/autoload.php';
+
+if (!isset($argv[1])) die('Usage: '.basename(__FILE__).' <cab>'.PHP_EOL);
+
+$cab = new CabArchive($argv[1]);
+var_dump($cab->getFileNames());
+
+if (isset($argv[2])) {
+    if ($argv[2] == 'blocks') {
+        foreach ($cab->getBlocks() as $folder_id => $blocks) {
+            foreach ($blocks as $block_id => $block_data) {
+                echo $folder_id.':'.$block_id.': from '.$block_data['uncompOffset'].' to '.($block_data['uncompOffset'] + $block_data['uncompSize']).' (packed size '.$block_data['compSize'].')'.PHP_EOL;
+            }
+        }
+    }
+    else if ($argv[2] == 'sizes') {
+        foreach ($cab->getFileNames() as $file) {
+            $data = $cab->getFileData($file);
+            echo $file.': uncompressed size: '.$data->size.' / compressed: '.$data->packedSize.PHP_EOL;
+        }
+    }
+    // if int, then folder
+    else if (intval($argv[2]) > 0 || $argv[2] === '0') {
+        $cab->decompressFolder($argv[2]);
+    }
+    // if string, file
+    else if (is_string($argv[2])) {
+
+    }
+}
