@@ -45,9 +45,15 @@ All list of properties and methods of `CabArchive` is listed below.
 - **getFileContent($filename)** - _in development now_
 - **extract($output, array $nodes = [])** - _in development now_
 
+### getFileNames()
+```php
+array getFileNames()
+```
+This method returns list of files compressed in cab.
+
 ### getFileData($filename)
 ```php
-object getFileData($filename))
+object getFileData($filename)
 ```
 This method returns a object with following fields:
 
