@@ -12,17 +12,23 @@
 
 # Usage
 Firstly, you need to create CabArchive instance:
+
 ```php
 $cab = new CabArchive('123.cab');
+
 ```
 After that you can get list of files in archive:
+
 ```php
 var_dump($cab->getFileNames());
 ```
+
 After that you can get all information about one file in archive:
+
 ```php
 var_dump($cab->getFileData('README.md'));
 ```
+
 ## CabArchive API
 All list of properties and methods of `CabArchive` is listed below.
 
