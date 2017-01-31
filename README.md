@@ -74,7 +74,7 @@ string getFileContent($filename)
 ```
 This method returns raw file content of `$filename`.
 
-_This method is in development now. For some reasons cab files has different format that described on Microsoft site_
+_This method is in development now. For some reasons cab files has different format than described on Microsoft site_
 
 ## CAB Format
 - .CAB-files format is described at https://msdn.microsoft.com/en-us/library/bb417343.aspx
