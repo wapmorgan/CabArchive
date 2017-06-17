@@ -213,40 +213,13 @@ class CabArchive {
         if (!isset($folder_id))
             return false;
         $file_end = $file_offset + $file_size;
-        // var_dump('Folder: '.$folder_id);
-        // var_dump('File offset: '.$file_offset);
-        // var_dump('File size: +'.$file_size);
-        // var_dump('File end: '.$file_end);
-
-        // $blocks_of_file = $this->detectBlocksOfFile($folder_id, $file_offset, $file_size);
 
         if ($this->folders[$folder_id]['compression'] == self::COMPRESSION_MSZIP) {
             $this->decompressFolder($folder_id);
-            // $this->decompressBlocks($folder_id, $blocks_of_file);
         } else {
             $this->readFolder($folder_id);
-            // $this->readBlocks($folder_id, $blocks_of_file);
         }
-        // var_dump($blocks_of_file);
-        $content = null;
-        // foreach ($blocks_of_file as $block_id) {
-        //     $block = $this->blocks[$folder_id][$block_id];
-        //     if ($block['uncompOffset'] < $file_offset) {
-        //         if (($block['uncompOffset'] + $block['uncompSize']) < $file_offset)
-        //             continue;
-        //         if (($block['uncompOffset'] + $block['uncompSize']) >= $file_end)
-        //             return $this->blocksRaw[$folder_id][$block_id];
-        //         else
-        //             $content = substr($this->blocksRaw[$folder_id][$block_id], $file['offsetInFolder']-$block['uncompOffset'], $block['size']);
-        //     } else if ($block['uncompOffset'] > $file_end) {
-        //         break;
-        //     } else {
-        //         $content .= substr();
-        //     }
-        // }
         $content = substr($this->foldersRaw[$folder_id], $file_offset, $file_size);
-        var_dump($this->foldersRaw);
-        var_dump(strlen($this->foldersRaw[$folder_id]));
         return $content;
     }
 
@@ -272,71 +245,22 @@ class CabArchive {
     public function decompressFolder($folderId) {
         if (isset($this->foldersRaw[$folderId]))
             return true;
-        $folder_raw = null;
-        $context = inflate_init(ZLIB_ENCODING_RAW);
+
+        $this->foldersRaw[$folderId] = null;
         foreach ($this->blocks[$folderId] as $block_id => $block) {
             $this->stream->go('block_'.$folderId.'_'.$block_id);
             if ($this->stream->readString(2) != 'CK')
                 throw new Exception('Can\'t read block '.$folderId.':'.$block_id.', wrong MSZIP signature');
-            $folder_raw = $this->stream->readString($block['compSize'] - 2);
-            // file_put_contents('comp_'.$folderId.'-'.$block_id, $folder_raw);
-            echo 'Try to decode '.$folderId.':'.$block_id.' block : ';
-            // if ($block_id == 0) {
-            // } else {
-            //     $context = inflate_init(ZLIB_ENCODING_RAW, array('dictionary' => str_replace("\00", ' ', $this->blocksRaw[$folderId][$block_id - 1])."\00"));
-            // }
-            $decoded = inflate_add($context, $folder_raw);
-            // $decoded = @gzinflate($folder_raw);
+            $block_raw = $this->stream->readString($block['compSize'] - 2);
+            $context = inflate_init(ZLIB_ENCODING_RAW, $block_id > 0 ? array('dictionary' => $this->blocksRaw[$folderId][$block_id - 1]) : array());
+            $decoded = inflate_add($context, $block_raw);
             if ($decoded === false) echo 'failed'.PHP_EOL;
             else {
                 echo strlen($decoded).' bytes'.PHP_EOL;
                 $this->blocksRaw[$folderId][$block_id] = $decoded;
-                // file_put_contents($folderId.'-'.$block_id, $decoded);
+                $this->foldersRaw[$folderId] .= $decoded;
             }
-            if ($block_id == 1) break;
 
-        }
-        // echo 'folder raw: '.strlen($folder_raw).', ';
-        // $this->foldersRaw[$folderId] = gzinflate($folder_raw);
-        // echo 'Folder '.strlen($this->foldersRaw[$folderId]).PHP_EOL;
-        // var_dump($this->foldersRaw[$folderId]);
-    }
-
-    /**
-     * For internal usage only.
-     */
-    public function decompressBlocks($folderId, array $blocks) {
-        foreach ($blocks as $block_id) {
-            if (isset($this->blocksRaw[$folderId][$block_id]))
-                continue;
-            $block = $this->blocks[$folderId][$block_id];
-            echo 'Decompressing '.$folderId.':'.$block_id.PHP_EOL;
-            $this->stream->go('block_'.$folderId.'_'.$block_id);
-            // skip 2 bytes of MSZIP signature
-            if ($this->stream->readString(2) != 'CK')
-                throw new Exception('Can\'t read block '.$folderId.':'.$block_id.', wrong MSZIP signature');
-            var_dump('Before read: '.$this->stream->getPosition());
-            $block_raw = $this->stream->readString($block['compSize'] - 2);
-            var_dump('After read: '.$this->stream->getPosition());
-
-            // decompress
-            $block_data = gzinflate($block_raw/*, $block['uncompSize']*/);
-            $this->blocksRaw[$folderId][$block_id] = $block_data;
-        }
-    }
-
-    /**
-     * For internal usage only.
-     */
-    public function readBlocks($folderId, array $blocks) {
-        foreach ($blocks as $block_id) {
-            if (isset($this->blocksRaw[$folderId][$block_id]))
-                continue;
-            $block = $this->blocks[$folderId][$block_id];
-            $this->stream->go('block_'.$folderId.'_'.$block_id);
-            var_dump('Before read: '.$this->stream->getPosition());
-            $this->blocksRaw[$folderId][$block_id] = $this->stream->readString($block['compSize'] - 2);
-            var_dump('After read: '.$this->stream->getPosition());
         }
     }
 
