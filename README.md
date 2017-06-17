@@ -8,7 +8,7 @@
 [![License](https://poser.pugx.org/wapmorgan/cab-archive/license)](https://packagist.org/packages/wapmorgan/cab-archive)
 [![Latest Unstable Version](https://poser.pugx.org/wapmorgan/cab-archive/v/unstable)](https://packagist.org/packages/wapmorgan/cab-archive)
 
-**Precaution!** _Right now library doesn't provide function to extract files. ~This looks like a bug in PHP and will be resolved in near future.~ Proposed a PR in php-src fixing a problem leading to inability to extract files, now waits for response._
+**Precaution!** Right now library doesn't provide function to extract files. ~This looks like a bug in PHP and will be resolved in near future.~ **Proposed a PR in php-src fixing a problem, now waits for response.**
 
 # Usage
 Firstly, you need to create CabArchive instance:
