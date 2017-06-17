@@ -8,7 +8,7 @@
 [![License](https://poser.pugx.org/wapmorgan/cab-archive/license)](https://packagist.org/packages/wapmorgan/cab-archive)
 [![Latest Unstable Version](https://poser.pugx.org/wapmorgan/cab-archive/v/unstable)](https://packagist.org/packages/wapmorgan/cab-archive)
 
-**Precaution!** _Right now library doesn't provide function to extract files. This looks like a bug in PHP and will be resolved in near future._
+**Precaution!** _Right now library doesn't provide function to extract files. ~This looks like a bug in PHP and will be resolved in near future.~ Proposed a PR in php-src fixing a problem leading to inability to extract files, now waits for response._
 
 # Usage
 Firstly, you need to create CabArchive instance:
@@ -41,27 +41,27 @@ All list of properties and methods of `CabArchive` is listed below.
 - **getNextCab()** - returns name of next Cab
 - **getSetId()** - returns set id (identical for all cab-archives from one set)
 - **getInSetNumber()** - returns number of cab in set
-- **getFileNames()** - retrives list of files from archive
-- **getFileData($filename)** - returns additional info of file as object.
-- **getFileAttributes($filename)** - returns list of file attributes. All available attributes:
+- **getFileNames(): array** - retrives list of files from archive
+- **getFileData($filename): object** - returns additional info of file as object.
+- **getFileAttributes($filename): array** - returns list of file attributes. All available attributes:
     - **CabArchive::ATTRIB_READONLY**
     - **CabArchive::ATTRIB_HIDDEN**
     - **CabArchive::ATTRIB_SYSTEM**
     - **CabArchive::ATTRIB_EXEC**
-- **getFileContent($filename)** - _in development now_
+- **getFileContent($filename): string** - returns raw content of file.
 - **extract($output, array $nodes = [])** - _in development now_
 
 ### getFileNames()
 ```php
 array getFileNames()
 ```
-This method returns list of files compressed in cab.
+This method returns an array of file names compressed in cab.
 
 ### getFileData($filename)
 ```php
 object getFileData($filename)
 ```
-This method returns a object with following fields:
+This method returns an object with following fields:
 
 - **size** - uncompressed size in bytes
 - **packedSize** - compressed size in bytes
@@ -74,7 +74,7 @@ string getFileContent($filename)
 ```
 This method returns raw file content of `$filename`.
 
-_This method is in development now. For some reasons cab files has different format than described on Microsoft site_
+_It's not working right now because of bug in PHP._
 
 ## CAB Format
 - .CAB-files format is described at https://msdn.microsoft.com/en-us/library/bb417343.aspx
