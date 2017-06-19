@@ -252,6 +252,10 @@ class CabArchive {
                 case self::COMPRESSION_NONE:
                     $this->readFolder($folder_id);
                     break;
+
+                default:
+                    throw new \Exception('Unknown compression algorithm: '.$this->folders[$folder_id]['compression']);
+                    break;
             }
         }
 
