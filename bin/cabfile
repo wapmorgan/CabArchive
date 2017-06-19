@@ -1,34 +1,43 @@
 #!/usr/bin/php
 <?php
+use wapmorgan\CabArchive\TerminalInfo;
 require __DIR__.'/../vendor/autoload.php';
 
 if (!isset($argv[1])) die('Usage: '.basename(__FILE__).' <cab>'.PHP_EOL);
 
-$cab = new CabArchive($argv[1]);
-var_dump($cab->getFileNames());
+$width = TerminalInfo::isInteractive() ? (TerminalInfo::getWidth() - 30) : 50;
 
-if (isset($argv[2])) {
-    if ($argv[2] == 'blocks') {
-        foreach ($cab->getBlocks() as $folder_id => $blocks) {
+$cab = new CabArchive($argv[1]);
+
+$mode = isset($argv[2]) ? $argv[2] : 'files';
+
+switch ($mode) {
+    case 'header':
+        var_dump($cab->getCabHeader());
+        break;
+
+    case 'folders':
+        var_dump($cab->getCabFolders());
+        break;
+
+    case 'blocks':
+        foreach ($cab->getCabBlocks() as $folder_id => $blocks) {
             foreach ($blocks as $block_id => $block_data) {
                 echo $folder_id.':'.$block_id.': from '.$block_data['uncompOffset'].' to '.($block_data['uncompOffset'] + $block_data['uncompSize']).' (packed size '.$block_data['compSize'].')'.PHP_EOL;
             }
         }
-    }
-    else if ($argv[2] == 'sizes') {
+        break;
+
+    case 'files':
         foreach ($cab->getFileNames() as $file) {
             $data = $cab->getFileData($file);
-            echo $file.': uncompressed size: '.$data->size.' / compressed: '.$data->packedSize.PHP_EOL;
+            printf('[%-'.$width.'s] uncomp: %d comp: %d'.PHP_EOL, $file, $data->size, $data->packedSize);
         }
-    }
-    // if int, then folder
-    else if (intval($argv[2]) > 0 || $argv[2] === '0') {
-        $cab->decompressFolder($argv[2]);
-    }
-    // if string, file
-    else if (is_string($argv[2])) {
-        var_dump($cab->getFileData($argv[2]));
-        if (isset($argv[3]))
-            var_dump($cab->getFileContent($argv[2]));
-    }
+        break;
+
+    default:
+        var_dump($cab->getFileData($mode));
+        if (in_array('--content', $argv))
+            var_dump($cab->getFileContent($mode));
+        break;
 }
