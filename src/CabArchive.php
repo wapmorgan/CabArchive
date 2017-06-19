@@ -4,6 +4,7 @@ use wapmorgan\BinaryStream\BinaryStream;
 class CabArchive {
     const COMPRESSION_NONE = 0x0;
     const COMPRESSION_MSZIP = 0x1;
+    const COMPRESSION_LZX = 0x1503;
 
     const ATTRIB_READONLY = 0x1;
     const ATTRIB_HIDDEN = 0x2;
@@ -27,13 +28,12 @@ class CabArchive {
         $this->filename = $filename;
         $this->stream = new BinaryStream($filename);
         $this->stream->setEndian(BinaryStream::LITTLE);
+        $this->setupReader();
         $this->open();
     }
 
-    protected function open() {
-        if (!$this->stream->compare(4, 'MSCF'))
-            throw new Exception('This is not a cab-file');
-        $this->header = $this->stream->readGroup(array(
+    protected function setupReader() {
+        $this->stream->saveGroup('header', [
             's:signature' => 4,
             'i:reserved1' => 32,
             'i:size' => 32,
@@ -47,16 +47,39 @@ class CabArchive {
             'i:flags' => 16,
             'i:setId' => 16,
             'i:inSetNumber' => 16,
-        ));
+        ]);
+
+        $this->stream->saveGroup('file', [
+            'i:size' => 32,
+            'i:offsetInFolder' => 32,
+            'i:folder' => 16,
+            'i:date' => 16,
+            'i:time' => 16,
+            'i:attributes' => 16,
+        ]);
+
+        $this->stream->saveGroup('block', [
+            'i:checksum' => 32,
+            'i:compSize' => 16,
+            'i:uncompSize' => 16,
+        ]);
+    }
+
+    protected function open() {
+        if (!$this->stream->compare(4, 'MSCF'))
+            throw new Exception('This is not a cab-file');
+
+        $this->header = $this->stream->readGroup('header');
         if ($this->header['flags'] & 0x4) {
             $header_reserve = $this->stream->readGroup(array(
                 'i:abHeaderSize' => 16,
-                'c:abFolderSize' => 1,
-                'c:abDataSize' => 1,
+                'i:abFolderSize' => 8,
+                'i:abDataSize' => 8,
             ));
             $header_reserve += $this->stream->readGroup(array(
                 's:abReserve' => $header_reserve['abHeaderSize']
             ));
+            // var_dump($header_reserve);
             if ($this->header['flags'] & 0x1) {
                 $this->header['cab_previous'] = $this->readNullTerminatedString();
                 $this->header['cab_previous_disk'] = $this->readNullTerminatedString();
@@ -68,6 +91,7 @@ class CabArchive {
             // var_dump($header_reserve);
         }
         // var_dump($this->header);
+
         $this->filesCount = $this->header['filesCount'];
         $this->foldersCount = $this->header['foldersCount'];
         // read folders
@@ -83,18 +107,12 @@ class CabArchive {
             $this->folders[] = $folder;
         }
         // var_dump($this->folders);
+
         // read files
         for ($i = 0; $i < $this->header['filesCount']; $i++) {
-            $file = $this->stream->readGroup(array(
-                'i:size' => 32,
-                'i:offsetInFolder' => 32,
-                'i:folder' => 16,
-                'i:date' => 16,
-                'i:time' => 16,
-                'i:attributes' => 16,
-            ));
+            $file = $this->stream->readGroup('file');
 
-            $year = ($file['date'] >> 9) + 1980;
+            $year = ($file['date'] >> 9) & 0b1111111 + 1980;
             $month = ($file['date'] >> 5) & 0b1111;
             $day = $file['date'] & 0b11111;
             $hours = $file['time'] >> 11;
@@ -106,16 +124,13 @@ class CabArchive {
             $this->files[] = $file;
         }
         // var_dump($this->files);
+
         // read data
         foreach ($this->folders as $folder_id => $folder) {
             $last_uncomp_offset = 0;
             $this->stream->go($folder['dataOffset']);
             for ($i = 0; $i < $folder['blocksCount']; $i++) {
-                $block = $this->stream->readGroup(array(
-                    'i:checksum' => 32,
-                    'i:compSize' => 16,
-                    'i:uncompSize' => 16
-                ));
+                $block = $this->stream->readGroup('block');
                 $block['uncompOffset'] = $last_uncomp_offset;
                 if ($this->header['flags'] & 0x4 && $header_reserve['abDataSize'] > 0)
                     $this->stream->readString($header_reserve['abDataSize']);
@@ -125,6 +140,7 @@ class CabArchive {
                 $this->blocks[$folder_id][] = $block;
             }
         }
+
         // var_dump($this->blocks);
     }
 
@@ -156,7 +172,11 @@ class CabArchive {
         return $this->header['inSetNumber'];
     }
 
-    public function getBlocks() {
+    public function getCabFolders() {
+        return $this->folders;
+    }
+
+    public function getCabBlocks() {
         return $this->blocks;
     }
 
@@ -182,7 +202,12 @@ class CabArchive {
                         $packedSize += ceil($block_intersection / 100 * $block['compSize']);
                     }
                 }
-                return (object)array('unixtime' => $file['unixtime'], 'size' => $file['size'], 'packedSize' => $packedSize, 'isCompressed' => $this->folders[$file['folder']]['compression'] != self::COMPRESSION_NONE);
+                return (object)array(
+                    'unixtime' => $file['unixtime'],
+                    'size' => $file['size'],
+                    'packedSize' => $packedSize,
+                    'isCompressed' => $this->folders[$file['folder']]['compression'] != self::COMPRESSION_NONE
+                );
             }
         }
         return false;
@@ -214,11 +239,22 @@ class CabArchive {
             return false;
         $file_end = $file_offset + $file_size;
 
-        if ($this->folders[$folder_id]['compression'] == self::COMPRESSION_MSZIP) {
-            $this->decompressFolder($folder_id);
-        } else {
-            $this->readFolder($folder_id);
+        if (!isset($this->foldersRaw[$folder_id])) {
+            switch ($this->folders[$folder_id]['compression']) {
+                case self::COMPRESSION_MSZIP:
+                    $this->decompressMsZipFolder($folder_id);
+                    break;
+
+                case self::COMPRESSION_LZX:
+                    $this->decompressLzxFolder($folder_id);
+                    break;
+
+                case self::COMPRESSION_NONE:
+                    $this->readFolder($folder_id);
+                    break;
+            }
         }
+
         $content = substr($this->foldersRaw[$folder_id], $file_offset, $file_size);
         return $content;
     }
@@ -242,15 +278,15 @@ class CabArchive {
         return $blocks;
     }
 
-    public function decompressFolder($folderId) {
+    protected function decompressMsZipFolder($folderId) {
         if (isset($this->foldersRaw[$folderId]))
             return true;
 
         $this->foldersRaw[$folderId] = null;
         foreach ($this->blocks[$folderId] as $block_id => $block) {
             $this->stream->go('block_'.$folderId.'_'.$block_id);
-            if ($this->stream->readString(2) != 'CK')
-                throw new Exception('Can\'t read block '.$folderId.':'.$block_id.', wrong MSZIP signature');
+            if (($sig = $this->stream->readString(2)) != 'CK')
+                throw new Exception('Can\'t read block '.$folderId.':'.$block_id.', wrong MSZIP signature ('.$sig.')');
             $block_raw = $this->stream->readString($block['compSize'] - 2);
             $context = inflate_init(ZLIB_ENCODING_RAW, $block_id > 0 ? array('dictionary' => $this->blocksRaw[$folderId][$block_id - 1]) : array());
             $decoded = inflate_add($context, $block_raw);
@@ -261,6 +297,23 @@ class CabArchive {
                 $this->foldersRaw[$folderId] .= $decoded;
             }
 
+        }
+    }
+
+    protected function decompressLzxFolder($folderId) {
+        if (isset($this->foldersRaw[$folderId]))
+            return true;
+        throw new \Exception('LZX decompessing is not available!');
+    }
+
+    protected function readFolder($folderId) {
+        if (isset($this->foldersRaw[$folderId]))
+            return true;
+
+        $this->foldersRaw[$folderId] = null;
+        foreach ($this->blocks[$folderId] as $block_id => $block) {
+            $this->stream->go('block_'.$folderId.'_'.$block_id);
+            $this->foldersRaw[$folderId] .= $this->stream->readString($block['compSize']);
         }
     }
 
