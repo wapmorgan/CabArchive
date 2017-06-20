@@ -3,7 +3,14 @@
 use wapmorgan\CabArchive\TerminalInfo;
 require __DIR__.'/../vendor/autoload.php';
 
-if (!isset($argv[1])) die('Usage: '.basename(__FILE__).' <cab>'.PHP_EOL);
+if (!isset($argv[1])) die('Usage: '.basename(__FILE__).' <cab> [<operation>] [--content]'.PHP_EOL
+    .'Operations:'.PHP_EOL
+    .' - header  - show raw cab header'.PHP_EOL
+    .' - folders - show all folders within cab'.PHP_EOL
+    .' - blocks  - show all blocks within cab'.PHP_EOL
+    .' - files   - show files list within cab'.PHP_EOL
+    .' - [filename] - show information about files within cab'.PHP_EOL
+    .'                If you set --content option, it will print content of the file'.PHP_EOL);
 
 $width = TerminalInfo::isInteractive() ? (TerminalInfo::getWidth() - 30) : 50;
 
