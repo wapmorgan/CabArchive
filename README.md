@@ -8,7 +8,7 @@
 [![License](https://poser.pugx.org/wapmorgan/cab-archive/license)](https://packagist.org/packages/wapmorgan/cab-archive)
 [![Latest Unstable Version](https://poser.pugx.org/wapmorgan/cab-archive/v/unstable)](https://packagist.org/packages/wapmorgan/cab-archive)
 
-**Precaution!** Right now library doesn't provide function to extract files due to bug in PHP. **It's merged in 7.x.**
+**Precaution!** Right now library provide functionality to extract files only on PHP 7.0.22+, 7.1.8+, 7.2.0 due to fixed bug in these versions.
 
 # Usage
 Firstly, you need to create CabArchive instance:
@@ -72,9 +72,13 @@ This method returns an object with following fields:
 ```php
 string getFileContent($filename)
 ```
-This method returns raw file content of `$filename`.
+This method returns raw file content of `$filename`. Supports extracting from cab's without compression and with MSZip compression. LZX compression is not supported.
 
-_It's not working right now because of bug in PHP._
+Works correctly only on PHP:
+
+- 7.0.22+
+- 7.1.8+
+- 7.2.0
 
 ## CAB Format
 - .CAB-files format is described at https://msdn.microsoft.com/en-us/library/bb417343.aspx
