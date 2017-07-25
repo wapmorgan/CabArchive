@@ -140,8 +140,6 @@ class CabArchive {
                 $this->blocks[$folder_id][] = $block;
             }
         }
-
-        // var_dump($this->blocks);
     }
 
     public function getCabHeader() {
@@ -213,6 +211,11 @@ class CabArchive {
         return false;
     }
 
+    /**
+     * List of attributes of file.
+     * @param string $filename Name of stored file
+     * @return array An array that may containing following values: CabArchive::ATTRIB_READONLY, CabArchive::ATTRIB_HIDDEN, CabArchive::ATTRIB_SYSTEM, CabArchive::ATTRIB_EXEC
+     */
     public function getFileAttributes($filename) {
         foreach ($this->files as $file) {
             if ($file['name'] == $filename) {
@@ -227,7 +230,9 @@ class CabArchive {
     }
 
     /**
-     * @return boolean False, if decompression is not supported
+     * Gets content of the file
+     * @param string $filename Name of stored file
+     * @return string|boolean Content of the file. False, if decompression is not supported.
      */
     public function getFileContent($filename) {
         foreach ($this->files as $file) {
@@ -268,7 +273,7 @@ class CabArchive {
     }
 
     /**
-     * For internal usage only.
+     * Returns list of block ids in which file stored
      */
     protected function detectBlocksOfFile($folderId, $fileOffset, $fileSize) {
         $fileEnd = $fileOffset + $fileSize;
@@ -286,6 +291,9 @@ class CabArchive {
         return $blocks;
     }
 
+    /**
+     * Decompresses folder with MS-ZIP compression
+     */
     protected function decompressMsZipFolder($folderId) {
         if (isset($this->foldersRaw[$folderId]))
             return true;
@@ -314,12 +322,18 @@ class CabArchive {
         return true;
     }
 
+    /**
+     * Decompresses folder with LZX compression. Not supported now
+     */
     protected function decompressLzxFolder($folderId) {
         if (isset($this->foldersRaw[$folderId]))
             return true;
         throw new \Exception('LZX decompessing is not available!');
     }
 
+    /**
+     * Reads folder without compression
+     */
     protected function readFolder($folderId) {
         if (isset($this->foldersRaw[$folderId]))
             return true;
@@ -331,6 +345,9 @@ class CabArchive {
         }
     }
 
+    /**
+     * Reads string until the null-character from stream
+     */
     protected function readNullTerminatedString() {
         $string = null;
         do {
