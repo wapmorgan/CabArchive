@@ -226,6 +226,9 @@ class CabArchive {
         return false;
     }
 
+    /**
+     * @return boolean False, if decompression is not supported
+     */
     public function getFileContent($filename) {
         foreach ($this->files as $file) {
             if ($file['name'] == $filename) {
@@ -242,7 +245,8 @@ class CabArchive {
         if (!isset($this->foldersRaw[$folder_id])) {
             switch ($this->folders[$folder_id]['compression']) {
                 case self::COMPRESSION_MSZIP:
-                    $this->decompressMsZipFolder($folder_id);
+                    if ($this->decompressMsZipFolder($folder_id) === false)
+                        return false;
                     break;
 
                 case self::COMPRESSION_LZX:
@@ -286,6 +290,12 @@ class CabArchive {
         if (isset($this->foldersRaw[$folderId]))
             return true;
 
+        $parts = explode('.', PHP_VERSION);
+        // not supported on versions below 7.0.22, 7.1.8, 7.2.0
+        if ($parts[0] < 7 || (($parts[1] == 0 && $parts[2] < 22) || ($parts[1] == 1 && $parts[2] < 8))) {
+            return false;
+        }
+
         $this->foldersRaw[$folderId] = null;
         foreach ($this->blocks[$folderId] as $block_id => $block) {
             $this->stream->go('block_'.$folderId.'_'.$block_id);
@@ -300,8 +310,8 @@ class CabArchive {
                 $this->blocksRaw[$folderId][$block_id] = $decoded;
                 $this->foldersRaw[$folderId] .= $decoded;
             }
-
         }
+        return true;
     }
 
     protected function decompressLzxFolder($folderId) {
