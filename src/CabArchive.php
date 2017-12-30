@@ -312,9 +312,9 @@ class CabArchive {
             $block_raw = $this->stream->readString($block['compSize'] - 2);
             $context = inflate_init(ZLIB_ENCODING_RAW, $block_id > 0 ? array('dictionary' => $this->blocksRaw[$folderId][$block_id - 1]) : array());
             $decoded = inflate_add($context, $block_raw);
-            if ($decoded === false) echo 'failed'.PHP_EOL;
+            if ($decoded === false) return false;
             else {
-                echo strlen($decoded).' bytes'.PHP_EOL;
+                // echo strlen($decoded).' bytes'.PHP_EOL;
                 $this->blocksRaw[$folderId][$block_id] = $decoded;
                 $this->foldersRaw[$folderId] .= $decoded;
             }
