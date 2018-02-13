@@ -2,7 +2,7 @@
 
 **CabArchive** is reader of CAB (Microsoft Cabinet files).
 
-[![Composer package](http://xn--e1adiijbgl.xn--p1acf/badge/wapmorgan/cab-archive)](https://packagist.org/packages/wapmorgan/cab-archive)
+[![Composer package](http://composer.network/badge/wapmorgan/cab-archive)](https://packagist.org/packages/wapmorgan/cab-archive)
 [![Total Downloads](https://poser.pugx.org/wapmorgan/cab-archive/downloads)](https://packagist.org/packages/wapmorgan/cab-archive)
 [![Latest Stable Version](https://poser.pugx.org/wapmorgan/cab-archive/v/stable)](https://packagist.org/packages/wapmorgan/cab-archive)
 [![License](https://poser.pugx.org/wapmorgan/cab-archive/license)](https://packagist.org/packages/wapmorgan/cab-archive)
