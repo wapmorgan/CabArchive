@@ -8,7 +8,7 @@
 [![License](https://poser.pugx.org/wapmorgan/cab-archive/license)](https://packagist.org/packages/wapmorgan/cab-archive)
 [![Latest Unstable Version](https://poser.pugx.org/wapmorgan/cab-archive/v/unstable)](https://packagist.org/packages/wapmorgan/cab-archive)
 
-**Precaution!** Right now library provide functionality to extract files only on PHP 7.0.22+, 7.1.8+, 7.2.0 due to fixed bug in these versions.
+**Precaution!** Right now library provide functionality to extract files only on PHP 7.0.22+, 7.1.8+, 7.2.0 due to bug in previous versions.
 
 # Usage
 Firstly, you need to create CabArchive instance:
