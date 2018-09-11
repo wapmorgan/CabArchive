@@ -24,6 +24,11 @@ class CabArchive {
     public $foldersCount = -1;
     public $blocksCount = -1;
 
+    /**
+     * CabArchive constructor.
+     * @param $filename
+     * @throws Exception
+     */
     public function __construct($filename) {
         $this->filename = $filename;
         $this->stream = new BinaryStream($filename);
@@ -32,6 +37,9 @@ class CabArchive {
         $this->open();
     }
 
+    /**
+     *
+     */
     protected function setupReader() {
         $this->stream->saveGroup('header', [
             's:signature' => 4,
@@ -65,6 +73,9 @@ class CabArchive {
         ]);
     }
 
+    /**
+     * @throws Exception
+     */
     protected function open() {
         if (!$this->stream->compare(4, 'MSCF'))
             throw new Exception('This is not a cab-file');
@@ -142,42 +153,72 @@ class CabArchive {
         }
     }
 
+    /**
+     * @return mixed
+     */
     public function getCabHeader() {
         return $this->header;
     }
 
+    /**
+     * @return int
+     */
     public function hasPreviousCab() {
         return $this->header['flags'] & 0x1;
     }
 
+    /**
+     * @return mixed
+     */
     public function getPreviousCab() {
         return $this->header['cab_previous'];
     }
 
+    /**
+     * @return int
+     */
     public function hasNextCab() {
         return $this->header['flags'] & 0x2;
     }
 
+    /**
+     * @return mixed
+     */
     public function getNextCab() {
         return $this->header['cab_next'];
     }
 
+    /**
+     * @return mixed
+     */
     public function getSetId() {
         return $this->header['setId'];
     }
 
+    /**
+     * @return mixed
+     */
     public function getInSetNumber() {
         return $this->header['inSetNumber'];
     }
 
+    /**
+     * @return array
+     */
     public function getCabFolders() {
         return $this->folders;
     }
 
+    /**
+     * @return array
+     */
     public function getCabBlocks() {
         return $this->blocks;
     }
 
+    /**
+     * @return array
+     */
     public function getFileNames() {
         $files = array();
         foreach ($this->files as $file) {
@@ -186,6 +227,10 @@ class CabArchive {
         return $files;
     }
 
+    /**
+     * @param $filename
+     * @return bool|object
+     */
     public function getFileData($filename) {
         foreach ($this->files as $file) {
             if ($file['name'] == $filename) {
@@ -214,7 +259,7 @@ class CabArchive {
     /**
      * List of attributes of file.
      * @param string $filename Name of stored file
-     * @return array An array that may containing following values: CabArchive::ATTRIB_READONLY, CabArchive::ATTRIB_HIDDEN, CabArchive::ATTRIB_SYSTEM, CabArchive::ATTRIB_EXEC
+     * @return array|bool An array that may containing following values: CabArchive::ATTRIB_READONLY, CabArchive::ATTRIB_HIDDEN, CabArchive::ATTRIB_SYSTEM, CabArchive::ATTRIB_EXEC
      */
     public function getFileAttributes($filename) {
         foreach ($this->files as $file) {
@@ -233,6 +278,7 @@ class CabArchive {
      * Gets content of the file
      * @param string $filename Name of stored file
      * @return string|boolean Content of the file. False, if decompression is not supported.
+     * @throws Exception
      */
     public function getFileContent($filename) {
         foreach ($this->files as $file) {
@@ -273,7 +319,34 @@ class CabArchive {
     }
 
     /**
+     * Extracts file or files to specific folder
+     * @param $outputFolder
+     * @param array $files
+     * @return bool|int
+     * @throws Exception
+     */
+    public function extract($outputFolder, $files = array())
+    {
+        $extracted = 0;
+        $outputFolder = realpath($outputFolder);
+
+        if (empty($files)) $files = $this->files;
+
+        foreach ($files as $file) {
+            if (file_put_contents($outputFolder.'/'.$file, $this->getFileContent($file)) === false)
+                return false;
+            $extracted++;
+        }
+
+        return $extracted;
+    }
+
+    /**
      * Returns list of block ids in which file stored
+     * @param $folderId
+     * @param $fileOffset
+     * @param $fileSize
+     * @return array
      */
     protected function detectBlocksOfFile($folderId, $fileOffset, $fileSize) {
         $fileEnd = $fileOffset + $fileSize;
@@ -293,6 +366,9 @@ class CabArchive {
 
     /**
      * Decompresses folder with MS-ZIP compression
+     * @param $folderId
+     * @return bool
+     * @throws Exception
      */
     protected function decompressMsZipFolder($folderId) {
         if (isset($this->foldersRaw[$folderId]))
@@ -324,6 +400,9 @@ class CabArchive {
 
     /**
      * Decompresses folder with LZX compression. Not supported now
+     * @param $folderId
+     * @return bool
+     * @throws Exception
      */
     protected function decompressLzxFolder($folderId) {
         if (isset($this->foldersRaw[$folderId]))
@@ -333,6 +412,8 @@ class CabArchive {
 
     /**
      * Reads folder without compression
+     * @param $folderId
+     * @return bool
      */
     protected function readFolder($folderId) {
         if (isset($this->foldersRaw[$folderId]))
@@ -359,6 +440,9 @@ class CabArchive {
 
     /**
      * Calculates how B intersect with A
+     * @param array $rangeA
+     * @param array $rangeB
+     * @return float|int
      */
     protected function calculateRangesIntersection(array $rangeA, array $rangeB) {
         $intersection = 100;

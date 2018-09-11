@@ -10,7 +10,8 @@ if (!isset($argv[1])) die('Usage: '.basename(__FILE__).' <cab> [<operation>] [--
     .' - blocks  - show all blocks within cab'.PHP_EOL
     .' - files   - show files list within cab'.PHP_EOL
     .' - [filename] - show information about files within cab'.PHP_EOL
-    .'                If you set --content option, it will print content of the file'.PHP_EOL);
+    .'                If you set --content option, it will print content of the file'.PHP_EOL
+    .'                If you set --extract option, it will extract file in current folder'.PHP_EOL);
 
 $width = TerminalInfo::isInteractive() ? (TerminalInfo::getWidth() - 30) : 50;
 
@@ -46,5 +47,7 @@ switch ($mode) {
         var_dump($cab->getFileData($mode));
         if (in_array('--content', $argv))
             var_dump($cab->getFileContent($mode));
+        else if (in_array('--extract', $argv))
+            var_dump($cab->extract(getcwd(), [$mode]));
         break;
 }
