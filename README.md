@@ -81,7 +81,7 @@ Works correctly only on PHP:
 - 7.1.8+
 - 7.2.0
 
-### extract($outputDirectory, array $files = [])
+### extract
 ```php
 int|bool extract($outputDirectory, array $files = [])
 ```
