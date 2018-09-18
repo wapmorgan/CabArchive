@@ -49,7 +49,7 @@ All list of properties and methods of `CabArchive` is listed below.
     - `CabArchive::ATTRIB_SYSTEM`
     - `CabArchive::ATTRIB_EXEC`
 - `getFileContent($filename): string` - returns raw content of file.
-- `extract($output, array $files = []): bool|int` - _in development now_
+- `extract($output, array $files = []): bool|int` - extracts file or files to specific folder.
 
 ### getFileNames
 ```php
